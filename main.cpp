@@ -1,4 +1,5 @@
 #include <iostream>
+#include <pcap.h>
 #include <PcapFileDevice.h>
 
 int
@@ -32,15 +33,17 @@ main(int argc, char **argv)
 
 	while (pcapngReader.getNextPacket(rawPacket)) {
 		pcap_pkthdr pktHdr;
-		pktHdr.ts = rawPacket.getPacketTimeStamp();
+		timespec spec = rawPacket.getPacketTimeStamp();
+		pktHdr.ts.tv_sec = spec.tv_sec;
+		pktHdr.ts.tv_usec = spec.tv_nsec / 1000;
 		pktHdr.caplen = rawPacket.getRawDataLen();
 		pktHdr.len = rawPacket.getFrameLength();
 		pcap_dump((u_char *)pcapDumper, &pktHdr, rawPacket.getRawData());
 	}
 	
-	pcap_stat stats;
+	pcpp::IPcapDevice::PcapStats stats;
 	pcapngReader.getStatistics(stats);
-	std::cout << "Read "<<  stats.ps_recv <<" packets successfully and " << stats.ps_drop << " packets could not be read\n";
+	std::cout << "Read "<<  stats.packetsRecv <<" packets successfully and " << stats.packetsDrop << " packets could not be read\n";
 
 	pcap_dump_close(pcapDumper);
 	pcap_close(pcapHandle);
